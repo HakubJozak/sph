@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/50/trunk/CoreDetection
+END
+CpuTopology.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/50/trunk/CoreDetection/CpuTopology.cpp
+END
+CpuTopology.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/50/trunk/CoreDetection/CpuTopology.h
+END
+cpuid64.asm
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/50/trunk/CoreDetection/cpuid64.asm
+END
