@@ -12,25 +12,45 @@ require './mouse'
 # require_all 'lib/**/*.rb'
 
 
-$h = 40
+$h = 50
 STEP = $h
 W = 600
 H = 600
 
 
+class Vector2D
+  attr_accessor :x,:y
+
+  def initialize(x,y)
+    @x,@y = x,y
+  end
+
+  # def +(b)
+  #   Vector2D.new(b.x + @x, b.y + @y)
+  # end
+
+  def -(b)
+    Vector2D.new(@x - b.x, @y - b.y)
+  end
+
+  # def *(alpha)
+  #   Vector2D.new(alpha * @x, alpha * @y)
+  # end
+
+end
+
+
 
 class Particle
 
-  attr_accessor :x, :y
+  attr_accessor :x, :y, :density, :force_p
 
   def initialize(x,y)
     @x, @y = x, y
-    @ux, @uy = 0.0, 0.0
 
     @m = 1.0
     @density = 1.0
-    @p_force = 1.0
-    @viscosity_force = 1.0
+    @force_p = Vector2D.new(0.0,0.0)
 
     @img = Gosu::Image.new($window, make_circle(2))
   end
@@ -48,11 +68,26 @@ class Particle
   end
 
   def calc_density
-    neighbours = $particles.reject { |p| self.neighbour?(p) }
-
     @density = neighbours.inject(0) do |rho, n|
-      x = 1.0 - (distance_squared(n) / h)
+      x = 1.0 - (Math::sqrt(distance_squared(n)) / $h)
       rho + x*x
+    end
+  end
+
+  def calc_pressure_force
+    rest_density = 1.0
+    k = 1000.0
+
+    neighbours.each do |neighbour|
+      distance = Math::sqrt(distance_squared(neighbour))
+
+      q = 1.0 - distance / $h
+      press = k *(self.density + neighbour.density - (2 * rest_density))
+
+      c = (press / distance * 0.5)
+
+      f = Vector2D.new( (self.x - neighbour.x) * c, (self.y - neighbour.y) * c)
+      @force_p = @force_p - f
     end
   end
 
@@ -78,17 +113,39 @@ class Particle
     @img.draw_rot(@x, @y, 0, 0)
   end
 
+  private
+
+  def neighbours
+    $particles.select { |p| p != self && self.neighbour?(p) }
+  end
+
 end
 
+
+module Timer
+
+  # TODO: replace by threading
+  def every(millis, &block)
+    now = Gosu::milliseconds
+    @last_yield ||= now - millis
+
+    if (@last_yield + millis) <= now
+      yield
+      @last_yield = now
+    end
+  end
+
+end
 
 
 
 class Win < Gosu::Window
 
+  include Timer
+
   def initialize()
     super(W, H, false)
     $window = self
-
     @mouse = Mouse.new
 
     $particles = []
@@ -103,7 +160,9 @@ class Win < Gosu::Window
         $particles << Particle.new(ox,oy)
       end
     end
+
   end
+
 
   def draw
     @mouse.draw
@@ -121,13 +180,10 @@ class Win < Gosu::Window
 
 
   def update
-      # init density of all particles
-      # clear pressure-force of all particles
-      # clear viscosity-force of all particles
-      # clear colour-field-gradient of all particles
-      # clear colour-field-laplacian of all particles
-
-    $particles.each(&:calc_density)
+    every(1000) do
+      $particles.each(&:calc_density)
+      $particles.each(&:calc_pressure_force)
+    end
 
     close if button_down?(Gosu::KbEscape)
   end
