@@ -121,16 +121,13 @@ class Win < Gosu::Window
 
 
   def update
-
       # init density of all particles
       # clear pressure-force of all particles
       # clear viscosity-force of all particles
       # clear colour-field-gradient of all particles
       # clear colour-field-laplacian of all particles
 
-    $particles.each do
-
-    end
+    $particles.each(&:calc_density)
 
     close if button_down?(Gosu::KbEscape)
   end
