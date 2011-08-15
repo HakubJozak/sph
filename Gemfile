@@ -5,6 +5,7 @@ gem 'bundler'
 gem 'require_all'
 # gem 'gosu', "0.7.20"
 gem 'gosu'
+gem 'rmagick', :require => 'RMagick'
 
 group :debug do
   gem 'awesome_print', :require => 'ap'
