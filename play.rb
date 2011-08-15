@@ -6,6 +6,9 @@ require 'rubygems'
 require 'bundler'
 Bundler.require(:default, :debug)
 
+
+require 'ostruct'
+require './mouse'
 # require_all 'lib/**/*.rb'
 
 
@@ -17,6 +20,8 @@ H = 600
 
 
 class Particle
+
+  attr_accessor :x, :y
 
   def initialize(x,y)
     @x, @y = x, y
@@ -30,16 +35,35 @@ class Particle
     @img = Gosu::Image.new($window, make_circle(2))
   end
 
+  # Squared distance between this particle and particle 'p'
+  #
+  def distance_squared(p)
+    dx =  (p.x - @x)
+    dy =  (p.y - @y)
+    (dx * dx + dy * dy)
+  end
+
+  def neighbour?(p)
+    distance_squared(p) <= ($h * $h)
+  end
+
+  def calc_density
+    neighbours = $particles.reject { |p| self.neighbour?(p) }
+
+    @density = neighbours.inject(0) do |rho, n|
+      x = 1.0 - (distance_squared(n) / h)
+      rho + x*x
+    end
+  end
+
   # Smoothing function
   #
   def a
-
   end
 
   # Kernel function
   #
   def w
-
   end
 
   def make_circle(r)
@@ -65,7 +89,9 @@ class Win < Gosu::Window
     super(W, H, false)
     $window = self
 
-    @particles = []
+    @mouse = Mouse.new
+
+    $particles = []
 
     (0..H).step(STEP) do |y|
       (0..W).step(STEP) do |x|
@@ -74,13 +100,23 @@ class Win < Gosu::Window
         ox = x
         ox += 30 if x == 200 && y == 200
 
-        @particles << Particle.new(ox,oy)
+        $particles << Particle.new(ox,oy)
       end
     end
   end
 
   def draw
-    @particles.each { |p| p.draw }
+    @mouse.draw
+
+    if button_down?(Gosu::MsLeft)
+      nearest = $particles.min do |a,b|
+        a.distance_squared(@mouse) <=> b.distance_squared(@mouse)
+      end
+
+      puts nearest.inspect
+    end
+
+    $particles.each { |p| p.draw }
   end
 
 
@@ -92,7 +128,7 @@ class Win < Gosu::Window
       # clear colour-field-gradient of all particles
       # clear colour-field-laplacian of all particles
 
-    @particles.each do
+    $particles.each do
 
     end
 
