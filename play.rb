@@ -33,9 +33,19 @@ class Vector2D
     Vector2D.new(@x - b.x, @y - b.y)
   end
 
-  # def *(alpha)
-  #   Vector2D.new(alpha * @x, alpha * @y)
-  # end
+  def *(alpha)
+    Vector2D.new(alpha * @x, alpha * @y)
+  end
+
+  def to_s
+    "(#{@x}, #{@y})"
+  end
+
+  def distance_squared(b)
+    dx =  (b.x - @x)
+    dy =  (b.y - @y)
+    (dx * dx + dy * dy)
+  end
 
 end
 
@@ -43,33 +53,26 @@ end
 
 class Particle
 
-  attr_accessor :x, :y, :density, :force_p
+  attr_accessor :pos, :density, :force, :v
 
   def initialize(x,y)
-    @x, @y = x, y
-
     @m = 1.0
     @density = 1.0
-    @force_p = Vector2D.new(0.0,0.0)
+
+    @pos = Vector2D.new(x, y)
+    @v = Vector2D.new(0.0,0.0)
+    @force = Vector2D.new(0.0,0.0)
 
     @img = Gosu::Image.new($window, make_circle(2))
   end
 
-  # Squared distance between this particle and particle 'p'
-  #
-  def distance_squared(p)
-    dx =  (p.x - @x)
-    dy =  (p.y - @y)
-    (dx * dx + dy * dy)
-  end
-
   def neighbour?(p)
-    distance_squared(p) <= ($h * $h)
+    self.pos.distance_squared(p.pos) <= ($h * $h)
   end
 
   def calc_density
     @density = neighbours.inject(0) do |rho, n|
-      x = 1.0 - (Math::sqrt(distance_squared(n)) / $h)
+      x = 1.0 - (Math::sqrt(pos.distance_squared(n.pos)) / $h)
       rho + x*x
     end
   end
@@ -79,28 +82,22 @@ class Particle
     k = 1000.0
 
     neighbours.each do |neighbour|
-      distance = Math::sqrt(distance_squared(neighbour))
+      distance = Math::sqrt(pos.distance_squared(neighbour.pos))
 
       q = 1.0 - distance / $h
       press = k *(self.density + neighbour.density - (2 * rest_density))
 
       c = (press / distance * 0.5)
-      r = self - neighbour
+      r = self.pos - neighbour.pos
 
 
       f = Vector2D.new( r.x * c, r.y * c)
-      @force_p = @force_p - f
+      @force = @force - f
     end
   end
 
-  # Smoothing function
-  #
-  def a
-  end
-
-  # Kernel function
-  #
-  def w
+  def neighbours
+    $particles.select { |p| p != self && self.neighbour?(p) }
   end
 
   def make_circle(r)
@@ -112,13 +109,15 @@ class Particle
   end
 
   def draw
-    @img.draw_rot(@x, @y, 0, 0)
+    @img.draw_rot(@pos.x, @pos.y, 0, 0)
   end
 
-  private
-
-  def neighbours
-    $particles.select { |p| p != self && self.neighbour?(p) }
+  def to_s
+    puts "---------------------------"
+    puts "pos = #{@pos}"
+    puts "v = #{@v}"
+    puts "density = #{@density}"
+    puts "force = #{@force}"
   end
 
 end
@@ -162,7 +161,6 @@ class Win < Gosu::Window
         $particles << Particle.new(ox,oy)
       end
     end
-
   end
 
 
@@ -171,7 +169,7 @@ class Win < Gosu::Window
 
     if button_down?(Gosu::MsLeft)
       nearest = $particles.min do |a,b|
-        a.distance_squared(@mouse) <=> b.distance_squared(@mouse)
+        a.pos.distance_squared(@mouse.pos) <=> b.pos.distance_squared(@mouse.pos)
       end
 
       puts nearest.inspect
@@ -182,9 +180,16 @@ class Win < Gosu::Window
 
 
   def update
-    every(1000) do
+    every(100) do
       $particles.each(&:calc_density)
       $particles.each(&:calc_pressure_force)
+
+      dt = 0.01
+
+      $particles.each do |p|
+        p.v = p.v + p.force * dt
+        p.pos = p.pos + p.v * dt
+      end
     end
 
     close if button_down?(Gosu::KbEscape)
