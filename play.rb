@@ -9,6 +9,13 @@ Bundler.require(:default, :debug)
 # require_all 'lib/**/*.rb'
 
 
+$h = 40
+STEP = $h
+W = 600
+H = 600
+
+
+
 class Particle
 
   def initialize(x,y)
@@ -55,18 +62,17 @@ end
 class Win < Gosu::Window
 
   def initialize()
-    super(600, 600, false)
+    super(W, H, false)
     $window = self
 
     @particles = []
 
-    5.times.with_index do |y|
-      5.times.with_index do |x|
-        ox = 40 + x * 100
-        oy = 40 + y * 100
-
+    (0..H).step(STEP) do |y|
+      (0..W).step(STEP) do |x|
         # misplaced particle to change the initial density
-        ox += 30 if x == 2 && y == 2
+        oy = y
+        ox = x
+        ox += 30 if x == 200 && y == 200
 
         @particles << Particle.new(ox,oy)
       end
@@ -79,7 +85,6 @@ class Win < Gosu::Window
 
 
   def update
-    $h = 10.0
 
       # init density of all particles
       # clear pressure-force of all particles
