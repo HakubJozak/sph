@@ -25,9 +25,9 @@ class Vector2D
     @x,@y = x,y
   end
 
-  # def +(b)
-  #   Vector2D.new(b.x + @x, b.y + @y)
-  # end
+  def +(b)
+    Vector2D.new(b.x + @x, b.y + @y)
+  end
 
   def -(b)
     Vector2D.new(@x - b.x, @y - b.y)
@@ -85,8 +85,10 @@ class Particle
       press = k *(self.density + neighbour.density - (2 * rest_density))
 
       c = (press / distance * 0.5)
+      r = self - neighbour
 
-      f = Vector2D.new( (self.x - neighbour.x) * c, (self.y - neighbour.y) * c)
+
+      f = Vector2D.new( r.x * c, r.y * c)
       @force_p = @force_p - f
     end
   end
