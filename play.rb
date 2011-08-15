@@ -12,7 +12,7 @@ require './mouse'
 # require_all 'lib/**/*.rb'
 
 
-$h = 50
+$h = 40
 STEP = $h
 W = 600
 H = 600
@@ -55,7 +55,9 @@ class Particle
 
   attr_accessor :pos, :density, :force, :v
 
-  def initialize(x,y)
+  def initialize(x,y, color = 'red')
+    @color = color
+
     @m = 1.0
     @density = 1.0
 
@@ -79,7 +81,7 @@ class Particle
 
   def calc_pressure_force
     rest_density = 1.0
-    k = 1000.0
+    k = 100.0
 
     neighbours.each do |neighbour|
       distance = Math::sqrt(pos.distance_squared(neighbour.pos))
@@ -103,7 +105,7 @@ class Particle
   def make_circle(r)
     circle = Magick::Image.new(2 * r, 2 * r) { self.background_color = 'none' }
     gc = Magick::Draw.new
-    gc.fill('red').circle(r, r, r, 0)
+    gc.fill(@color).circle(r, r, r, 0)
     gc.draw(circle)
     circle
   end
@@ -121,6 +123,22 @@ class Particle
   end
 
 end
+
+
+class WallParticle < Particle
+
+  def initialize(x,y)
+    super(x,y,'green')
+    @density = 10000
+  end
+
+  def calc_density
+  end
+
+  def calc_pressure_force
+  end
+end
+
 
 
 module Timer
@@ -156,9 +174,13 @@ class Win < Gosu::Window
         # misplaced particle to change the initial density
         oy = y
         ox = x
-        ox += 30 if x == 200 && y == 200
+        #  ox += 30 if x == 200 && y == 200
 
-        $particles << Particle.new(ox,oy)
+        if x == 0 || y == 0 || x >= W || y >=  H
+          $particles << WallParticle.new(ox,oy)
+        else
+          $particles << Particle.new(ox,oy)
+        end
       end
     end
   end
